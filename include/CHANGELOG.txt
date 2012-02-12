@@ -1,0 +1,17 @@
+v1.3
+- Mac OSX build support
+
+v1.2
+- Windows build support
+
+
+v1.1
+
+- Added Shooter game
+- Added Models game
+- Sample models added
+- Various ouveralys added for the Models game
+- Added Video Output
+- Added Game saving to map serialization
+- Various modifications to ARDriver, System, and GLWindow2 for the game interface
+- Manual added
