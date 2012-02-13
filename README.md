@@ -1,6 +1,6 @@
 #ofxPTAMM#
 
-This addon it´s based on @Akira_At_Asia ofxPTAM addon. Insted of using PTAM developed by Georg Klein it use PTAMM by Robert Castle.
+This addon it´s based on @Akira_At_Asia ofxPTAM addon ( https://github.com/Akira-Hayasaka/ofxPTAM ). Insted of using PTAM developed by Georg Klein it use PTAMM by Robert Castle ( http://www.robots.ox.ac.uk/~bob/research/research_ptamm.html ).
 
 First you need to be able to compile PTAMM sources. I had a detailed tutorail for MacOSX 10.6 and 10.7 at: http://www.patriciogonzalezvivo.com/blog/?p=547
 

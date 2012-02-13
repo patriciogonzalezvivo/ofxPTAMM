@@ -23,9 +23,6 @@ public:
     void buildMapBegin();
     
     void draw();
-    
-    void drawTrail();
-	void drawGrid();
 	
-    vector<int> trail;
+    //vector<int> trail;
 };

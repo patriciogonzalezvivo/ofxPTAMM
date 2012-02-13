@@ -118,15 +118,14 @@ void ofxPTAMM::update(ofPixelsRef _pixelsRef){
     
 	mpTracker->TrackFrame(mimFrameBW, false);
 	bMapBuildComplete = mpMap->IsGood();
-    
-    cout << mpTracker->GetMessageForUser() << endl;
+    ofLog( ofLogLevel(OF_LOG_VERBOSE) , mpTracker->GetMessageForUser());
 }
 
 void ofxPTAMM::draw() {
     mpTracker->draw();
 }
 
-ofVec2f ofxPTAMM::getPosition() const{
+ofVec2f ofxPTAMM::getScreenPosition() const{
     ofVec2f rta = ofVec3f(0,0);
     
     if ( isMapBuild() ){
@@ -148,56 +147,83 @@ ofVec2f ofxPTAMM::getPosition() const{
     return rta;
 };
 
-ofVec3f ofxPTAMM::getOrientation() const{
+void ofxPTAMM::moveCamera(){
+    mpCamera->SetImageSize(ImageRef(imgWidth,imgHeight));
+    
     SE3<> cvdMatrix = mpTracker->GetCurrentPose();
-    /*
-    float heading = 0.0;
-	float attitude= 0.0;
-	float bank = 0.0;
+	
+    glMatrixMode(GL_PROJECTION); 
+	glLoadIdentity();
     
-    //Assuming the angles are in radians.
-	if (cvdMatrix.get_rotation().get_matrix()[1][0] > 0.998) { // singularity at north pole
-		heading = atan2(cvdMatrix.get_rotation().get_matrix()[0][2],cvdMatrix.get_rotation().get_matrix()[2][2]);
-		attitude = PI/2;
-		bank = 0;
-	} else if (cvdMatrix.get_rotation().get_matrix()[1][0] < -0.998) { // singularity at south pole
-		heading = atan2(cvdMatrix.get_rotation().get_matrix()[0][2],cvdMatrix.get_rotation().get_matrix()[2][2]);
-		attitude = -PI/2;
-		bank = 0;
-	}
+	//glMultMatrix(mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100));
+    TooN::Matrix<4> mC = mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100);
+    GLdouble glmC[16];
+    glmC[0] = mC[0][0]; glmC[1] = mC[1][0]; glmC[2] = mC[2][0]; glmC[3] = mC[3][0];
+    glmC[4] = mC[0][1]; glmC[5] = mC[1][1]; glmC[6] = mC[2][1]; glmC[7] = mC[3][1];
+    glmC[8] = mC[0][2]; glmC[9] = mC[1][2]; glmC[10] = mC[2][2]; glmC[11] = mC[3][2];
+    glmC[12] = mC[0][3]; glmC[13] = mC[1][3]; glmC[14] = mC[2][3]; glmC[15] = mC[3][3];
     
-	heading = atan2(-cvdMatrix.get_rotation().get_matrix()[2][0],cvdMatrix.get_rotation().get_matrix()[0][0]);
-	bank = atan2(-cvdMatrix.get_rotation().get_matrix()[1][2],cvdMatrix.get_rotation().get_matrix()[1][1]);
-	attitude = asin(cvdMatrix.get_rotation().get_matrix()[1][0]);
+    glMultMatrixd(glmC);
+	
+    //glMultMatrix( cvdMatrix );
+    glTranslated( cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
+    TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
+    GLdouble glm[16];
+    
+    glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = 0;
+    glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
+    glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
+    glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
+
+    glMultMatrixd(glm);
      
-    return ofVec3f(attitude,heading,bank);
-    */
+    glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glMultMatrix(SE3<>());
     
-	ofMatrix4x4 matrix = ofMatrix4x4(cvdMatrix.get_rotation().get_matrix()[0][0], 
-                                     cvdMatrix.get_rotation().get_matrix()[0][1], 
-                                     cvdMatrix.get_rotation().get_matrix()[0][2], 
-                                     0, 
-                                     cvdMatrix.get_rotation().get_matrix()[1][0], 
-                                     cvdMatrix.get_rotation().get_matrix()[1][1], 
-                                     cvdMatrix.get_rotation().get_matrix()[1][2], 
-                                     0,
-                                     cvdMatrix.get_rotation().get_matrix()[2][0], 
-                                     cvdMatrix.get_rotation().get_matrix()[2][1], 
-                                     cvdMatrix.get_rotation().get_matrix()[2][2], 
-                                     0,
-                                     0,0,0,1);
-    
-    return matrix.getRotate().getEuler();
+    glScaled(PTAM_SCALE, PTAM_SCALE, PTAM_SCALE);
+    //ofRotate(180, 0, 1, 0);
+    glRotatef(180, 0, 1, 0);
 };
 
-ofMatrix4x4 ofxPTAMM::getRotationMatrix() const {
-    ofVec3f euler = getOrientation();
-	ofMatrix4x4 matrix;
-	matrix.makeRotationMatrix(ofRadToDeg(euler.x), ofVec3f(1,0,0),
-                              ofRadToDeg(euler.y), ofVec3f(0,1,0),
-                              ofRadToDeg(euler.z), ofVec3f(0,0,1));
-    return matrix;
-}
+ofMatrix4x4 ofxPTAMM::getCameraMatrix() const{
+    TooN::Matrix<4> m = mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100);
+    /*
+    GLdouble glm[16];
+    glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = m[3][0];
+    glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = m[3][1];
+    glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = m[3][2];
+    glm[12] = m[0][3]; glm[13] = m[1][3]; glm[14] = m[2][3]; glm[15] = m[3][3];
+    glMultMatrixd(glm);*/
+    return ofMatrix4x4(m[0][0], m[1][0], m[2][0], m[3][0], 
+                       m[0][1], m[1][1], m[2][1], m[3][1], 
+                       m[0][2], m[1][2], m[2][2], m[3][2], 
+                       m[0][3], m[1][3], m[2][3], m[3][3]);
+};
+
+ofVec3f ofxPTAMM:: getTranslation() const{
+    SE3<> cvdMatrix = mpTracker->GetCurrentPose();
+    //glTranslated( cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
+    return ofVec3f(cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
+};
+
+ofMatrix4x4 ofxPTAMM::getRotationMatrix() const{
+    SE3<> cvdMatrix = mpTracker->GetCurrentPose();
+    
+    TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
+    /*
+    GLdouble glm[16];
+    glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = 0;
+    glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
+    glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
+    glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
+    glMultMatrixd(glm);
+    */
+    return ofMatrix4x4(m[0][0], m[1][0], m[2][0], 0, 
+                       m[0][1], m[1][1], m[2][1], 0, 
+                       m[0][2], m[1][2], m[2][2], 0, 
+                       0,       0,       0,       1);
+};
 
 void ofxPTAMM::resetMap() {
 	mpTracker->reset();

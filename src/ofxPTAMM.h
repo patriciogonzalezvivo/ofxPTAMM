@@ -45,10 +45,14 @@ public:
     // TODOS
     //  - HELP with scele, orientation and rotationMatrix
     
-    ofVec2f     getPosition() const;
-	float       getScale() const;           // NOT WORKING!!!
-	ofVec3f     getOrientation() const;     // NOT WORKING!!!
-	ofMatrix4x4 getRotationMatrix() const;  // NOT WORKING!!!
+    ofVec2f     getScreenPosition() const;
+    
+    void        moveCamera();
+    
+    ofMatrix4x4 getCameraMatrix() const;
+    
+    ofVec3f     getTranslation() const;
+    ofMatrix4x4 getRotationMatrix() const;
     
 private:
     bool SwitchMap( int nMapNum, bool bForce = false );                                    // Switch to a particular map.
