@@ -23,6 +23,10 @@ public:
     ofImage                 video;
     ofxPTAMM				ptamm;
     
+    ofLight                 light;
+    ofCamera                cam;
+    ofImage                 logo;
+    
     int			camWidth, camHeight;
 };
 #endif

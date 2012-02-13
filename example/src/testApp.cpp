@@ -12,6 +12,14 @@ void testApp::setup(){
 	
 	grabber.initGrabber(camWidth,camHeight);
     video.allocate(camWidth, camHeight, OF_IMAGE_COLOR);
+    
+    // ofBox uses texture coordinates from 0-1, so you can load whatever
+	// sized images you want and still use them to texture your box
+	// but we have to explicitly normalize our tex coords here
+	ofEnableNormalizedTexCoords();
+	
+	// loads the OF logo from disk
+    logo.loadImage("of.png");
 }
 
 void testApp::update(){
@@ -34,19 +42,25 @@ void testApp::draw(){
     ofSetColor(255, 255);
 	ptamm.draw();
     
-    ofPushMatrix();
     if ( ptamm.isMapBuild() ){
-        ofTranslate(ptamm.getPosition());
-        
-        ofVec3f rot = ptamm.getOrientation();
-        ofRotateX(rot.x);
-        ofRotateY(rot.y);
-        ofRotateZ(rot.z);
-    }
+        cam.begin();
+        ofPushMatrix();
+		
+        ptamm.moveCamera();
     
-    ofSetColor(0, 0, 200);
-    ofBox(0,0, 80);
-    ofPopMatrix();
+        logo.bind();
+        ofFill();
+        ofSetColor(255);
+        ofBox(100);
+        logo.unbind();
+    
+        ofNoFill();
+        ofSetColor(128);
+        ofBox(100 * 1.1f);
+		
+        ofPopMatrix();
+        cam.end();
+    }
 }
 
 
