@@ -14,10 +14,9 @@ First you need to be able to compile PTAMM sources. I had a detailed tutorail fo
 cd ofxPTAMM
 cp -r /usr/local/include/cvd include/
 cp -r /usr/local/include/gvars3 include/
-cp -r /usr/local/include/TooN/ include/
-cp -r /usr/local/lib/libcvd* lib/osx/
-cp -r /usr/local/lib/libGVars3* lib/osx/
-cp -r /usr/local/lib/lib3ds* lib/osx/
+cp -r /usr/local/include/TooN include/
+cp -r /usr/local/lib/libcvd-0.8.dylib libs/osx/
+cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 </pre>
 
 - Add #undef check on the begining of ```ofxPTAMM/include/TooN/TooN.h```
@@ -84,14 +83,10 @@ OF_PATH = ../../..
 //THIS HAS ALL THE HEADER AND LIBS FOR OF CORE
 #include "../../../libs/openFrameworksCompiled/project/osx/CoreOF.xcconfig"
 
-OTHER_LDFLAGS = $(OF_CORE_LIBS) $(OF_PATH)/addons/ofxPTAMM/lib/osx/libcvd-0.8.dylib
+OTHER_LDFLAGS = $(OF_CORE_LIBS)
 HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) $(OF_PATH)/addons/ofxPTAMM/include
 ```
 
-- Add vecLib.framework
-
-<pre>
-http://meandmark.com/blog/2011/03/xcode-4-adding-a-framework-to-your-project/
-</pre>
+- Add vecLib.framework. Here is how to add new frameworks http://meandmark.com/blog/2011/03/xcode-4-adding-a-framework-to-your-project/
 
 - Copy ```ofxPTAMM/include/camera.cfg``` to ```bin/data``` directory 

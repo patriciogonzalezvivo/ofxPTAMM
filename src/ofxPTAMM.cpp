@@ -150,7 +150,7 @@ ofVec2f ofxPTAMM::getPosition() const{
 
 ofVec3f ofxPTAMM::getOrientation() const{
     SE3<> cvdMatrix = mpTracker->GetCurrentPose();
-    
+    /*
     float heading = 0.0;
 	float attitude= 0.0;
 	float bank = 0.0;
@@ -169,11 +169,25 @@ ofVec3f ofxPTAMM::getOrientation() const{
 	heading = atan2(-cvdMatrix.get_rotation().get_matrix()[2][0],cvdMatrix.get_rotation().get_matrix()[0][0]);
 	bank = atan2(-cvdMatrix.get_rotation().get_matrix()[1][2],cvdMatrix.get_rotation().get_matrix()[1][1]);
 	attitude = asin(cvdMatrix.get_rotation().get_matrix()[1][0]);
+     
+    return ofVec3f(attitude,heading,bank);
+    */
     
-    ofQuaternion a;
-    a.getEuler();
+	ofMatrix4x4 matrix = ofMatrix4x4(cvdMatrix.get_rotation().get_matrix()[0][0], 
+                                     cvdMatrix.get_rotation().get_matrix()[0][1], 
+                                     cvdMatrix.get_rotation().get_matrix()[0][2], 
+                                     0, 
+                                     cvdMatrix.get_rotation().get_matrix()[1][0], 
+                                     cvdMatrix.get_rotation().get_matrix()[1][1], 
+                                     cvdMatrix.get_rotation().get_matrix()[1][2], 
+                                     0,
+                                     cvdMatrix.get_rotation().get_matrix()[2][0], 
+                                     cvdMatrix.get_rotation().get_matrix()[2][1], 
+                                     cvdMatrix.get_rotation().get_matrix()[2][2], 
+                                     0,
+                                     0,0,0,1);
     
-	return ofVec3f(attitude,heading,bank);
+    return matrix.getRotate().getEuler();
 };
 
 ofMatrix4x4 ofxPTAMM::getRotationMatrix() const {
