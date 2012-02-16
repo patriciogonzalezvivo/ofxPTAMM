@@ -11,21 +11,18 @@
 
 #define PTAM_SCALE 0.001
 
-#include <gvars3/instances.h>
-
 #include "cvd/image.h"
 #include "cvd/rgb.h"
 #include "cvd/byte.h"
-//#include <vector>
 
 #include "Map.h"
 #include "MapMaker.h"
-//#include "MapSerializer.h"
+#include "MapSerializer.h"
 
 class ofxATANCamera;
-//class MapViewer;
 class ofxTracker;
 
+#include "ofxCameraCalibrator.h"
 #include "ofMain.h"
 
 class ofxPTAMM {
@@ -33,47 +30,43 @@ public:
     ofxPTAMM();
     ~ofxPTAMM();
     
-    void    init(int imgW, int imgH);
-    void    update(ofPixelsRef _pixelsRef);
+    void    init(int imgW, int imgH, string configFile = "camera.cfg");
+    bool    update(unsigned char * _pixels, int _width = -1, int _height = -1, ofImageType _type = OF_IMAGE_COLOR );
     void	draw();
     
-    void	startBuildMap();	
-    void	resetMap();
+    void    buildMap();
+    void    newMap();                                  // Create a new map and move all elements to it
+    bool    switchMap( int nMapNum, bool bForce=false);// Switch to a particular map.
+    bool    deleteMap( int nMapNum );                  // Delete a specified map
+    void    resetAll();
+    void    saveMap();
+    void    saveMaps();
+    void    loadMap();
     
+    int     getTotalMaps() const {return vMaps.size();};
+    int     getActualMap() const {return map->MapID();};
+    bool    isMapPresent() const;
     bool    isMapBuild() const { return bMapBuildComplete; };
-    
-    // TODOS
-    //  - HELP with scele, orientation and rotationMatrix
+    void    moveCamera() const;
     
     ofVec2f     getScreenPosition() const;
-    
-    void        moveCamera();
-    
     ofMatrix4x4 getCameraMatrix() const;
-    
     ofVec3f     getTranslation() const;
     ofMatrix4x4 getRotationMatrix() const;
     
-private:
-    bool SwitchMap( int nMapNum, bool bForce = false );                                    // Switch to a particular map.
-    void NewMap();                                  // Create a new map and move all elements to it
-    bool DeleteMap( int nMapNum );                  // Delete a specified map
-    void ResetAll();                                // Wipes out ALL maps, returning system to initial state
-//  void StartMapSerialization(std::string sCommand, std::string sParams);   //(de)serialize a map
+    bool bDebug;
     
-    GVars3::gvar3<int> mgvnLockMap;                 // Stop a map being edited - i.e. keyframes added, points updated
-    
+private:    
     CVD::Image<CVD::byte>       mimFrameBW;
-    std::vector<PTAMM::Map*>    mvpMaps;            // The set of maps
-    PTAMM::Map                  *mpMap;             // The current map
-    PTAMM::MapMaker             *mpMapMaker;        // The map maker
-    ofxTracker                  *mpTracker;         // The tracker
-    ofxATANCamera               *mpCamera;          // The camera model
-//  PTAMM::MapViewer            *mpMapViewer;       // The Map Viewer
-//  PTAMM::MapSerializer        *mpMapSerializer;   // The map serializer for saving and loading maps
+    std::vector<PTAMM::Map*>    vMaps;            // The set of maps
+    PTAMM::Map                  *map;             // The current map
+    PTAMM::MapMaker             *mapMaker;        // The map maker
+    ofxTracker                  *tracker;         // The tracker
+    ofxATANCamera               *camera;          // The camera model
+    PTAMM::MapSerializer        *mapSerializer;   // The map serializer for saving and loading maps
 	
     int     imgWidth, imgHeight;
-    
+    bool    *bLockMap;    // Stop a map being edited - i.e. keyframes added, points updated
     bool	bMapBuildComplete;
 };		
 		

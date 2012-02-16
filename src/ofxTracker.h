@@ -8,6 +8,7 @@
  */
 #pragma once
 
+#include "MapSerializer.h"
 #include "Tracker.h"
 #include "Map.h"
 
@@ -22,7 +23,5 @@ public:
     void reset(){ Reset(); };
     void buildMapBegin();
     
-    void draw();
-	
-    //vector<int> trail;
+    void draw(bool _drawPoints = false);
 };

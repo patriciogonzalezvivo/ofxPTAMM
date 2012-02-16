@@ -10,7 +10,7 @@
 #include "ofxATANCamera.h"
 #include <fstream>
 
-void ofxATANCamera::manualParamUpdate(string cfgFile) {
+void ofxATANCamera::loadParameters(string cfgFile) {
 
 	ifstream stream;
 	stream.open(ofToDataPath(cfgFile).c_str());
@@ -47,14 +47,24 @@ void ofxATANCamera::manualParamUpdate(string cfgFile) {
 	RefreshParams();
 }
 
-// TODO: do complete Test!
-bool ofxATANCamera::paramTest(){
-	
-	cout << mvFocal[0] << endl;
-	if (mvFocal[0] == 320) {
-		return false;
-	}else {
-		return true;
-	}
-	
-}
+void ofxATANCamera::loadParameters(TooN::Vector<NUMTRACKERCAMPARAMETERS> _params){ 
+    (*mgvvCameraParams) = _params; 
+};
+
+bool ofxATANCamera::testParameters(){ 
+    if (mvFocal[0] == 320) return false; 
+    else return true; 
+};
+
+void ofxATANCamera::updateParameters(TooN::Vector<NUMTRACKERCAMPARAMETERS> vUpdate){
+    (*mgvvCameraParams) = (*mgvvCameraParams) + vUpdate;
+    RefreshParams();
+    
+    cout << "New parameters: " ;
+    for (int i = 0; i < 5; i++) {
+        cout << (*mgvvCameraParams)[i] << " ";
+    }
+    cout << endl;
+};
+
+const TooN::Vector<5> ofxATANCamera::mvDefaultParams = TooN::makeVector(0.5, 0.75, 0.5, 0.5, 0.1);

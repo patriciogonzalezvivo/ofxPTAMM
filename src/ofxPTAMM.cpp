@@ -21,116 +21,120 @@ using namespace CVD;
 using namespace GVars3;
 
 ofxPTAMM::ofxPTAMM(){
-    mpMap = new PTAMM::Map;
-    mvpMaps.push_back( mpMap );
-    mpMap->mapLockManager.Register(this);
-    mpMapMaker = new PTAMM::MapMaker( mvpMaps, mpMap );
-    //mpMapViewer = new MapViewer(mvpMaps, mpMap, mGLWindow);
-    //mpMapSerializer = new PTAMM::MapSerializer( mvpMaps );
+    map = new PTAMM::Map;
+    vMaps.push_back( map );
+    map->mapLockManager.Register(this);
+    mapMaker = new PTAMM::MapMaker( vMaps, map );
+    mapSerializer = new PTAMM::MapSerializer( vMaps );
     
+    bDebug = false;
 	bMapBuildComplete = false;
+    bLockMap = new bool(false);
 }
 
 ofxPTAMM::~ofxPTAMM(){
-    if( mpMap != NULL )  {
-        mpMap->mapLockManager.UnRegister( this );
+    if( map != NULL )  {
+        map->mapLockManager.UnRegister( this );
     }
 }
 
-void ofxPTAMM::init(int imgW, int imgH) {
-
+void ofxPTAMM::init(int imgW, int imgH, string configFile) {
+    
 	imgWidth = imgW;
 	imgHeight = imgH;	
-		
+    
 	mimFrameBW.resize(ImageRef(imgWidth,imgHeight));
     // First, check if the camera is calibrated.
     // If not, we need to run the calibration widget.
     GV3::get<Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ATANCamera::mvDefaultParams, HIDDEN);
-    mpCamera = new ofxATANCamera("Camera");
-    mpCamera->manualParamUpdate("camera.cfg");	
-    //mpCamera->SetImageSize(mVideoSource.Size());
+    camera = new ofxATANCamera("Camera");
+    camera->loadParameters(configFile);
     
-    if(!mpCamera->paramTest())
-    {
+    if(!camera->testParameters()){
         cout << endl;
         cout << "! Camera.Parameters is not set, need to run the CameraCalibrator tool" << endl;
         cout << "  and/or put the Camera.Parameters= line into the appropriate .cfg file." << endl;
         exit(1);
     }
     
-    mpTracker = new ofxTracker(ImageRef(imgWidth,imgHeight), *mpCamera, mvpMaps, mpMap, *mpMapMaker);	
+    tracker = new ofxTracker(ImageRef(imgWidth,imgHeight), *camera, vMaps, map, *mapMaker);	
 }
 
-void ofxPTAMM::update(ofPixelsRef _pixelsRef){
-    // TODOs
-    //    - some checks here in order to avoid SEGMENTATION_FALT
+bool ofxPTAMM::update(unsigned char * _pixels, int _width, int _height, ofImageType _type){    
+    if (_width == -1)
+        _width = imgWidth;
     
-    int nChannels = _pixelsRef.getNumChannels();
-    unsigned char * pixels = _pixelsRef.getPixels();
-
-    ImageRef mirSize = ImageRef(imgWidth,imgHeight);
-    BasicImage<CVD::byte> imCaptured(pixels, mirSize);
+    if (_height == -1)
+        _height = imgHeight;
+    
+    ImageRef mirSize = ImageRef(_width,_height);
+    BasicImage<CVD::byte> imCaptured(_pixels, mirSize);
     mimFrameBW.resize(mirSize);
     
-    if (nChannels == 1){
+    if (_type == OF_IMAGE_GRAYSCALE){
         for (int y=0; y<mirSize.y; y++) {
             for (int x=0; x<mirSize.x; x++) {
-                mimFrameBW[y][x]        = *pixels;
-                pixels++;
+                mimFrameBW[y][x]        = *_pixels;
+                _pixels++;
             }
         }
-    } else if (nChannels > 1){
+    } else if (_type == OF_IMAGE_COLOR){
         for (int y=0; y<mirSize.y; y++) {
             for (int x=0; x<mirSize.x; x++) {
-                pixels++;
-                mimFrameBW[y][x]        = *pixels;
-                pixels++;
-                pixels++;
+                _pixels++;
+                mimFrameBW[y][x]        = *_pixels;
+                _pixels++;
+                _pixels++;
             }
         }
-    } else if (nChannels == 4){
+    } else if (_type == OF_IMAGE_COLOR_ALPHA ){
         for (int y=0; y<mirSize.y; y++) {
             for (int x=0; x<mirSize.x; x++) {
-                pixels++;
-                mimFrameBW[y][x]        = *pixels;
-                pixels++;
-                pixels++;
-                pixels++;
+                _pixels++;
+                mimFrameBW[y][x]        = *_pixels;
+                _pixels++;
+                _pixels++;
+                _pixels++;
             }
         }
-    }
+    } else 
+        return false;
     
     //Check if the map has been locked by another thread, and wait for release.
-    bool bWasLocked = mpMap->mapLockManager.CheckLockAndWait( this, 0 );
+    bool bWasLocked = map->mapLockManager.CheckLockAndWait( this, 0 );
+    
     /* This is a rather hacky way of getting this feedback,
      but GVars cannot be assigned to different variables
      and each map has its own edit lock bool.
      A button could be used instead, but the visual
      feedback would not be as obvious.
-     */ 
-    
-    // TODO: - not ready for multi-thread
-    
-    //mpMap->bEditLocked = *mgvnLockMap; //sync up the maps edit lock with the gvar bool.
+     */
+    map->bEditLocked = *bLockMap; //sync up the maps edit lock with the gvar bool.
     
     if(bWasLocked)
-        mpTracker->ForceRecovery();
+        tracker->ForceRecovery();
     
-	mpTracker->TrackFrame(mimFrameBW, false);
-	bMapBuildComplete = mpMap->IsGood();
-    ofLog( ofLogLevel(OF_LOG_VERBOSE) , mpTracker->GetMessageForUser());
+	tracker->TrackFrame(mimFrameBW, false);
+    
+	bMapBuildComplete = map->IsGood();
+    ofLog( OF_LOG_VERBOSE , tracker->GetMessageForUser());
+    return true;
 }
 
 void ofxPTAMM::draw() {
-    mpTracker->draw();
+    tracker->draw(bDebug);
+}
+
+bool ofxPTAMM::isMapPresent() const {
+    return ( map->IsGood() && !(tracker->IsLost()));
 }
 
 ofVec2f ofxPTAMM::getScreenPosition() const{
     ofVec2f rta = ofVec3f(0,0);
     
     if ( isMapBuild() ){
-        SE3<> cvdMapMatrix = mpTracker->GetCurrentPose();
-        Matrix<4> cvdCamMatrix = mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100);
+        SE3<> cvdMapMatrix = tracker->GetCurrentPose();
+        Matrix<4> cvdCamMatrix = camera->MakeUFBLinearFrustumMatrix(0.005, 100);
         
         Vector<3> v3;
         v3[0] = 0.001;
@@ -139,7 +143,7 @@ ofVec2f ofxPTAMM::getScreenPosition() const{
         Vector<3> v3Cam = cvdMapMatrix * v3;
         if(v3Cam[2] < 0.001)
             v3Cam[2] = 0.001;
-        Vector<2> vPos = mpCamera->Project(project(v3Cam));
+        Vector<2> vPos = camera->Project(project(v3Cam));
         
         rta.set(vPos[0], vPos[1]);
     }
@@ -147,25 +151,22 @@ ofVec2f ofxPTAMM::getScreenPosition() const{
     return rta;
 };
 
-void ofxPTAMM::moveCamera(){
-    mpCamera->SetImageSize(ImageRef(imgWidth,imgHeight));
+void ofxPTAMM::moveCamera() const {
+    camera->SetImageSize(ImageRef(imgWidth,imgHeight));
     
-    SE3<> cvdMatrix = mpTracker->GetCurrentPose();
+    SE3<> cvdMatrix = tracker->GetCurrentPose();
 	
     glMatrixMode(GL_PROJECTION); 
 	glLoadIdentity();
     
-	//glMultMatrix(mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100));
-    TooN::Matrix<4> mC = mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100);
+    TooN::Matrix<4> mC = camera->MakeUFBLinearFrustumMatrix(0.005, 100);
     GLdouble glmC[16];
     glmC[0] = mC[0][0]; glmC[1] = mC[1][0]; glmC[2] = mC[2][0]; glmC[3] = mC[3][0];
     glmC[4] = mC[0][1]; glmC[5] = mC[1][1]; glmC[6] = mC[2][1]; glmC[7] = mC[3][1];
     glmC[8] = mC[0][2]; glmC[9] = mC[1][2]; glmC[10] = mC[2][2]; glmC[11] = mC[3][2];
     glmC[12] = mC[0][3]; glmC[13] = mC[1][3]; glmC[14] = mC[2][3]; glmC[15] = mC[3][3];
-    
     glMultMatrixd(glmC);
 	
-    //glMultMatrix( cvdMatrix );
     glTranslated( cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
     TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
     GLdouble glm[16];
@@ -174,27 +175,25 @@ void ofxPTAMM::moveCamera(){
     glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
     glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
     glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
-
+    
     glMultMatrixd(glm);
-     
+    
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMultMatrix(SE3<>());
     
-    glScaled(PTAM_SCALE, PTAM_SCALE, PTAM_SCALE);
-    //ofRotate(180, 0, 1, 0);
-    glRotatef(180, 0, 1, 0);
+    ofScale(PTAM_SCALE, PTAM_SCALE, PTAM_SCALE);
+    ofRotate(180, 0, 1, 0);
 };
 
 ofMatrix4x4 ofxPTAMM::getCameraMatrix() const{
-    TooN::Matrix<4> m = mpCamera->MakeUFBLinearFrustumMatrix(0.005, 100);
-    /*
-    GLdouble glm[16];
-    glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = m[3][0];
-    glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = m[3][1];
-    glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = m[3][2];
-    glm[12] = m[0][3]; glm[13] = m[1][3]; glm[14] = m[2][3]; glm[15] = m[3][3];
-    glMultMatrixd(glm);*/
+    TooN::Matrix<4> m = camera->MakeUFBLinearFrustumMatrix(0.005, 100);
+    /*GLdouble glm[16];
+     glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = m[3][0];
+     glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = m[3][1];
+     glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = m[3][2];
+     glm[12] = m[0][3]; glm[13] = m[1][3]; glm[14] = m[2][3]; glm[15] = m[3][3];
+     glMultMatrixd(glm);*/
     return ofMatrix4x4(m[0][0], m[1][0], m[2][0], m[3][0], 
                        m[0][1], m[1][1], m[2][1], m[3][1], 
                        m[0][2], m[1][2], m[2][2], m[3][2], 
@@ -202,35 +201,30 @@ ofMatrix4x4 ofxPTAMM::getCameraMatrix() const{
 };
 
 ofVec3f ofxPTAMM:: getTranslation() const{
-    SE3<> cvdMatrix = mpTracker->GetCurrentPose();
+    SE3<> cvdMatrix = tracker->GetCurrentPose();
     //glTranslated( cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
     return ofVec3f(cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
 };
 
 ofMatrix4x4 ofxPTAMM::getRotationMatrix() const{
-    SE3<> cvdMatrix = mpTracker->GetCurrentPose();
+    SE3<> cvdMatrix = tracker->GetCurrentPose();
     
     TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
-    /*
-    GLdouble glm[16];
-    glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = 0;
-    glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
-    glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
-    glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
-    glMultMatrixd(glm);
-    */
+    /*GLdouble glm[16];
+     glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = 0;
+     glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
+     glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
+     glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
+     glMultMatrixd(glm);*/
     return ofMatrix4x4(m[0][0], m[1][0], m[2][0], 0, 
                        m[0][1], m[1][1], m[2][1], 0, 
                        m[0][2], m[1][2], m[2][2], 0, 
                        0,       0,       0,       1);
 };
 
-void ofxPTAMM::resetMap() {
-	mpTracker->reset();
-}
-void ofxPTAMM::startBuildMap() {
-	mpTracker->buildMapBegin();
-}
+void ofxPTAMM::buildMap(){
+    tracker->buildMapBegin();
+};
 
 /**
  * Switch to the map with ID nMapNum
@@ -238,10 +232,10 @@ void ofxPTAMM::startBuildMap() {
  * @param bForce This is only used by DeleteMap and ResetAll, and is
  * to ensure that MapViewer is looking at a safe map.
  */
-bool ofxPTAMM::SwitchMap( int nMapNum, bool bForce ){
+bool ofxPTAMM::switchMap( int nMapNum, bool bForce ){
     
     //same map, do nothing. This should not actually occur
-    if(mpMap->MapID() == nMapNum) {
+    if(map->MapID() == nMapNum) {
         return true;
     }
     
@@ -251,16 +245,16 @@ bool ofxPTAMM::SwitchMap( int nMapNum, bool bForce ){
     }
     
     
-    for( size_t ii = 0; ii < mvpMaps.size(); ii++ ){
-        PTAMM::Map * pcMap = mvpMaps[ ii ];
+    for( size_t ii = 0; ii < vMaps.size(); ii++ ){
+        PTAMM::Map * pcMap = vMaps[ ii ];
         if( pcMap->MapID() == nMapNum ) {
-            mpMap->mapLockManager.UnRegister( this );
-            mpMap = pcMap;
-            mpMap->mapLockManager.Register( this );
+            map->mapLockManager.UnRegister( this );
+            map = pcMap;
+            map->mapLockManager.Register( this );
         }
     }
     
-    if(mpMap->MapID() != nMapNum){
+    if(map->MapID() != nMapNum){
         cerr << "Failed to switch to " << nMapNum << ". Does not exist." << endl;
         return false;
     }
@@ -274,15 +268,15 @@ bool ofxPTAMM::SwitchMap( int nMapNum, bool bForce ){
      System,Tracker, and MapViewer are all in this thread.
      */
     
-    *mgvnLockMap = mpMap->bEditLocked;
+    *bLockMap = map->bEditLocked;
     
     
     //update the map maker thread
-    if( !mpMapMaker->RequestSwitch( mpMap ) ) {
+    if( !mapMaker->RequestSwitch( map ) ) {
         return false;
     }
     
-    while( !mpMapMaker->SwitchDone() ) {
+    while( !mapMaker->SwitchDone() ) {
 #ifdef WIN32
         Sleep(1);
 #else
@@ -293,7 +287,7 @@ bool ofxPTAMM::SwitchMap( int nMapNum, bool bForce ){
     //update the map viewer object
     //mpMapViewer->SwitchMap(mpMap, bForce);
     
-    if( !mpTracker->SwitchMap( mpMap ) ) {
+    if( !tracker->SwitchMap( map ) ) {
         return false;
     }
     
@@ -304,17 +298,17 @@ bool ofxPTAMM::SwitchMap( int nMapNum, bool bForce ){
  * Create a new map and switch all
  * threads and objects to it.
  */
-void ofxPTAMM::NewMap(){
+void ofxPTAMM::newMap(){
     
-    *mgvnLockMap = false;
-    mpMap->mapLockManager.UnRegister( this );
-    mpMap = new Map();
-    mpMap->mapLockManager.Register( this );
-    mvpMaps.push_back( mpMap );
+    *bLockMap = false;
+    map->mapLockManager.UnRegister( this );
+    map = new Map();
+    map->mapLockManager.Register( this );
+    vMaps.push_back( map );
     
     //update the map maker thread
-    mpMapMaker->RequestReInit( mpMap );
-    while( !mpMapMaker->ReInitDone() ) {
+    mapMaker->RequestReInit( map );
+    while( !mapMaker->ReInitDone() ) {
 #ifdef WIN32
         Sleep(1);
 #else
@@ -325,9 +319,9 @@ void ofxPTAMM::NewMap(){
     //update the map viewer object
     //mpMapViewer->SwitchMap(mpMap);
     
-    mpTracker->SetNewMap( mpMap );
+    tracker->SetNewMap( map );
     
-    cout << "New map created (" << mpMap->MapID() << ")" << endl;
+    cout << "New map created (" << map->MapID() << ")" << endl;
 }
 
 
@@ -337,22 +331,22 @@ void ofxPTAMM::NewMap(){
  * original state.
  * This reset ignores the edit lock status on all maps
  */
-void ofxPTAMM::ResetAll(){
+void ofxPTAMM::resetAll(){
     
     //move all maps to first map.
-    if( mpMap != mvpMaps.front() ){
-        if( !SwitchMap( mvpMaps.front()->MapID(), true ) ) {
+    if( map != vMaps.front() ){
+        if( !switchMap( vMaps.front()->MapID(), true ) ) {
             cerr << "Reset All: Failed to switch to first map" << endl;
         }
     }
-    mpMap->bEditLocked = false;
+    map->bEditLocked = false;
     
     //reset map.
-    mpTracker->Reset();
+    tracker->Reset();
     
     //lock and delete all remaining maps
-    while( mvpMaps.size() > 1 ){
-        DeleteMap( mvpMaps.back()->MapID() );
+    while( vMaps.size() > 1 ){
+        deleteMap( vMaps.back()->MapID() );
     }
     
 }
@@ -361,41 +355,39 @@ void ofxPTAMM::ResetAll(){
  * Delete a specified map.
  * @param nMapNum map to delete
  */
-bool ofxPTAMM::DeleteMap( int nMapNum ){
-    if( mvpMaps.size() <= 1 ){
+bool ofxPTAMM::deleteMap( int nMapNum ){
+    if( vMaps.size() <= 1 ){
         cout << "Cannot delete the only map. Use Reset instead." << endl;
         return false;
     }
     
     
     //if the specified map is the current map, move threads to another map
-    if( nMapNum == mpMap->MapID() ){
+    if( nMapNum == map->MapID() ){
         int nNewMap = -1;
         
-        if( mpMap == mvpMaps.front() ) {
-            nNewMap = mvpMaps.back()->MapID();
+        if( map == vMaps.front() ) {
+            nNewMap = vMaps.back()->MapID();
         } else {
-            nNewMap = mvpMaps.front()->MapID();
+            nNewMap = vMaps.front()->MapID();
         }
         
         // move the current map users elsewhere
-        if( !SwitchMap( nNewMap, true ) ) {
+        if( !switchMap( nNewMap, true ) ) {
             cerr << "Delete Map: Failed to move threads to another map." << endl;
             return false;
         }
     }
     
-    
-    
     // find and delete the map
-    for( size_t ii = 0; ii < mvpMaps.size(); ii++ ){
-        Map * pDelMap = mvpMaps[ ii ];
+    for( size_t ii = 0; ii < vMaps.size(); ii++ ){
+        Map * pDelMap = vMaps[ ii ];
         if( pDelMap->MapID() == nMapNum ) {
             
             pDelMap->mapLockManager.Register( this );
             pDelMap->mapLockManager.LockMap( this );
             delete pDelMap;
-            mvpMaps.erase( mvpMaps.begin() + ii );
+            vMaps.erase( vMaps.begin() + ii );
             
             ///@TODO Possible bug. If another thread (eg serialization) was using this
             /// and waiting for unlock, would become stuck or seg fault.
@@ -406,15 +398,20 @@ bool ofxPTAMM::DeleteMap( int nMapNum ){
 }
 
 
-/**
- * Set up the map serialization thread for saving/loading and the start the thread
- * @param sCommand the function that was called (eg. SaveMap)
- * @param sParams the params string, which may contain a filename and/or a map number
- */
-/*
-void ofxPTAMM::StartMapSerialization(std::string sCommand, std::string sParams) {
-    if( mpMapSerializer->Init( sCommand, sParams, *mpMap) ) {
-        mpMapSerializer->start();
+void ofxPTAMM::saveMap(){
+    if( mapSerializer->Init( "SaveMap", "", *map) ) {
+        mapSerializer->start();
     }
-}*/
+}
 
+void ofxPTAMM::saveMaps(){
+    if( mapSerializer->Init( "SaveMaps", "", *map) ) {
+        mapSerializer->start();
+    }
+}
+
+void ofxPTAMM::loadMap(){
+    if( mapSerializer->Init( "LoadMap", "", *map) ) {
+        mapSerializer->start();
+    }
+}

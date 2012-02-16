@@ -19,7 +19,7 @@ cp -r /usr/local/lib/libcvd-0.8.dylib libs/osx/
 cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 </pre>
 
-- Add #undef check on the begining of ```ofxPTAMM/include/TooN/TooN.h```
+- Add ```#undef``` check on the begining of ```ofxPTAMM/include/TooN/TooN.h```
 
 ```c++
 #ifdef check
