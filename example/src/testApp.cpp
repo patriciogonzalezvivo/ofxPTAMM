@@ -29,7 +29,7 @@ void testApp::update(){
         video.setFromPixels(grabber.getPixels(),camWidth,camHeight,OF_IMAGE_COLOR);
         video.mirror(false, true);
         video.update();
-        ptamm.update( video.getPixelsRef() );
+        ptamm.update( video.getPixels() );
     }
     
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
@@ -67,10 +67,10 @@ void testApp::draw(){
 void testApp::keyPressed(int key){
 	switch (key){
 		case ' ':
-			ptamm.startBuildMap();
+			ptamm.buildMap();
 			break;
 		case 'r':
-			ptamm.resetMap();
+			ptamm.resetAll();
 			break;
 	}
 }
