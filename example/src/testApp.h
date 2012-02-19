@@ -22,6 +22,7 @@ public:
     ofVideoGrabber			grabber;
     ofImage                 video;
     ofxPTAMM				ptamm;
+    //ofxCameraCalibrator     ccam;
     
     ofLight                 light;
     ofCamera                cam;

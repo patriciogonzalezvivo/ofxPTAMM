@@ -12,6 +12,7 @@ void testApp::setup(){
 	
 	grabber.initGrabber(camWidth,camHeight);
     video.allocate(camWidth, camHeight, OF_IMAGE_COLOR);
+    //ccam.init(camWidth, camHeight);
     
     // ofBox uses texture coordinates from 0-1, so you can load whatever
 	// sized images you want and still use them to texture your box
@@ -30,6 +31,7 @@ void testApp::update(){
         video.mirror(false, true);
         video.update();
         ptamm.update( video.getPixels() );
+        //ccam.update( video.getPixels() );
     }
     
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
@@ -42,25 +44,27 @@ void testApp::draw(){
     ofSetColor(255, 255);
 	ptamm.draw();
     
+    ofSetColor(255, 255);
+    //ccam.draw();
+    
     if ( ptamm.isMapBuild() ){
         cam.begin();
         ofPushMatrix();
 		
         ptamm.moveCamera();
     
+        ofTranslate(0,0,-50);
+        
         logo.bind();
         ofFill();
         ofSetColor(255);
         ofBox(100);
         logo.unbind();
-    
-        ofNoFill();
-        ofSetColor(128);
-        ofBox(100 * 1.1f);
 		
         ofPopMatrix();
         cam.end();
     }
+    
 }
 
 
@@ -72,6 +76,41 @@ void testApp::keyPressed(int key){
 		case 'r':
 			ptamm.resetAll();
 			break;
+        case 'n':
+            ptamm.newMap();
+			break;
+        case 'd':
+            ptamm.newMap();
+            ptamm.switchMap((ptamm.getActualMap()-1)%ptamm.getTotalMaps());
+            ptamm.deleteMap(ptamm.getActualMap());
+			break;
+        case OF_KEY_LEFT:
+            ptamm.switchMap((ptamm.getActualMap()-1)%ptamm.getTotalMaps());
+            break;
+        case OF_KEY_RIGHT:
+            ptamm.switchMap((ptamm.getActualMap()+1)%ptamm.getTotalMaps());
+            break;
+        case 's':
+            ptamm.saveMap();
+			break;
+        case 'l':
+            ptamm.loadMap();
+			break;
+        case 'p':
+            ptamm.bDebug = !ptamm.bDebug;
+			break;
+        case OF_KEY_RETURN:
+            //ccam.grabPicture();
+            break;
+        case 'o':
+            //ccam.bOptimizing = !ccam.bOptimizing;
+            break;
+        case OF_KEY_UP:
+            //ccam.viewImage( (ccam.getActualImage()-1)%ccam.getTotalImages());
+            break;
+        case OF_KEY_DOWN:
+            //ccam.viewImage( (ccam.getActualImage()+1)%ccam.getTotalImages());
+            break;
 	}
 }
 

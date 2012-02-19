@@ -8,18 +8,24 @@
  */
 #pragma once
 
-#include "MapSerializer.h"
-#include "Tracker.h"
-#include "Map.h"
-
 #include "ofMain.h"
 
-using namespace PTAMM;
+#include "ofxATANCamera.h"
 
-class ofxTracker : public Tracker {
+#include "Map.h"
+#include "MapPoint.h"
+#include "Tracker.h"
+#include "MapSerializer.h"
+
+#include "cvd/image.h"
+
+class ofxTracker : public PTAMM::Tracker {
 public:
 	
-    ofxTracker(CVD::ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &maps, Map *m, MapMaker &mm) : Tracker(irVideoSize, c, maps, m, mm){ };
+    ofxTracker(CVD::ImageRef irVideoSize, const ofxATANCamera &c, std::vector<PTAMM::Map*> &maps, PTAMM::Map *m, PTAMM::MapMaker &mm) : PTAMM::Tracker(irVideoSize, c, maps, m, mm){
+        mnLostFrames = 0;
+    };
+    
     void reset(){ Reset(); };
     void buildMapBegin();
     

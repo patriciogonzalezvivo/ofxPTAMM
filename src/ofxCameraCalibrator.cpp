@@ -7,22 +7,19 @@
 //
 #include "ofxCameraCalibrator.h"
 
-#include "ofxATANCamera.h"
-#include "ofxATANCamera.h"
-#include "OpenGL.h"
-#include "cvd/colourspace.h"
-#include "gvars3/instances.h"
-#include "TooN/SVD.h"
-#include <fstream>
-#include <stdlib.h>
-
-using namespace CVD;
-using namespace GVars3;
-
 ofxCameraCalibrator::ofxCameraCalibrator(){
     bDebug = false;
     nShowImage = 0;
     bDisableDistortion = false;
+    
+    data.CornerPatchSize = 20;
+    data.DisableDistortion = false;
+    data.Optimizing = false;
+    data.MaxStepDistFraction = 0.3;
+    data.BlurSigma = 1.0;
+    data.MinCornersForGrabbedImage = 20;
+    data.MeanGate = 10;
+    
     reset();
 }
 
@@ -34,7 +31,6 @@ void ofxCameraCalibrator::init(int imgW, int imgH, string configFile) {
 	mimFrameBW.resize( CVD::ImageRef(imgWidth,imgHeight) );
     // First, check if the camera is calibrated.
     // If not, we need to run the calibration widget.
-    GV3::get<Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ATANCamera::mvDefaultParams, HIDDEN);
     mpCamera = new ofxATANCamera("Camera");	
 }
 
@@ -47,8 +43,7 @@ bool ofxCameraCalibrator::update(unsigned char * _pixels, int _width, int _heigh
     if (_height == -1)
         _height = imgHeight;
     
-    ImageRef mirSize = ImageRef(_width,_height);
-    BasicImage<CVD::byte> imCaptured(_pixels, mirSize);
+    CVD::ImageRef mirSize = CVD::ImageRef(_width,_height);
     mimFrameBW.resize(mirSize);
     
     if (_type == OF_IMAGE_GRAYSCALE){
@@ -79,7 +74,7 @@ bool ofxCameraCalibrator::update(unsigned char * _pixels, int _width, int _heigh
         }
     } else
         rta = false;
-    
+
     return rta;
 };
 
@@ -89,10 +84,17 @@ void ofxCameraCalibrator::draw(){
     
     if(!bOptimizing){
         ofxCalibImage c;
-        if(c.MakeFromImage(mimFrameBW)){
+        /*
+        ofImage a;
+        a.allocate(mimFrameBW.size().x, mimFrameBW.size().y, OF_IMAGE_GRAYSCALE);
+        a.setFromPixels(mimFrameBW.data(), mimFrameBW.size().x, mimFrameBW.size().y, OF_IMAGE_GRAYSCALE);
+        a.draw(0,0);
+        */
+        if(c.makeFromImage(mimFrameBW, &data) ){
             if(bGrabNextFrame){
+                cout << "Grabbed" << endl;
                 vCalibImgs.push_back(c);
-                vCalibImgs.back().GuessInitialPose(*mpCamera);
+                vCalibImgs.back().guessInitialPose(*mpCamera);
                 vCalibImgs.back().draw3DGrid(*mpCamera, false);
                 bGrabNextFrame = false;
             };
@@ -105,11 +107,12 @@ void ofxCameraCalibrator::draw(){
         if(nToShow >= (int) vCalibImgs.size())
             nToShow = static_cast<int>(vCalibImgs.size())-1;
         nShowImage = nToShow + 1;
+    
+        ofImage img;
+        img.allocate(vCalibImgs[nToShow].mim.size().x, vCalibImgs[nToShow].mim.size().y, OF_IMAGE_GRAYSCALE);
+        img.setFromPixels(vCalibImgs[nToShow].mim.data(), vCalibImgs[nToShow].mim.size().x, vCalibImgs[nToShow].mim.size().y, OF_IMAGE_GRAYSCALE);
+        img.draw(0,0);
         
-        ofPushMatrix();
-        glDrawPixels( vCalibImgs[nToShow].mim );
-        
-        ofPopMatrix();
         vCalibImgs[nToShow].draw3DGrid(*mpCamera,true);
     }
 }
@@ -147,7 +150,7 @@ void ofxCameraCalibrator::optimizeOneStep(){
     
     for(int n=0; n<nViews; n++){
         int nMotionBase = n*6;
-        vector<ofxCalibImage::ErrorAndJacobians> vEAJ = vCalibImgs[n].Project(*mpCamera);
+        vector<ofxCalibImage::ErrorAndJacobians> vEAJ = vCalibImgs[n].project(*mpCamera);
         for(unsigned int i=0; i<vEAJ.size(); i++){
             ofxCalibImage::ErrorAndJacobians &EAJ = vEAJ[i];
             // All the below should be +=, but the MSVC compiler doesn't seem to understand that. :(
@@ -182,3 +185,4 @@ void ofxCameraCalibrator::optimizeOneStep(){
     
     mpCamera->updateParameters( vUpdate.slice(nCamParamBase, NUMTRACKERCAMPARAMETERS) );
 };
+

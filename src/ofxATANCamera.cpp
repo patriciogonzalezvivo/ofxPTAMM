@@ -8,16 +8,15 @@
  */
 
 #include "ofxATANCamera.h"
-#include <fstream>
 
 void ofxATANCamera::loadParameters(string cfgFile) {
-
+    
 	ifstream stream;
 	stream.open(ofToDataPath(cfgFile).c_str());
 	string params;
 	getline(stream, params);
 	stream.close();
-
+    
 	unsigned int loc = params.find( "=", 0 );
     params.erase(0, loc+1);
 	vector<char*> tmp;
@@ -26,8 +25,8 @@ void ofxATANCamera::loadParameters(string cfgFile) {
 	tp = strtok(strchar, " ");
 	tmp.push_back(tp);
 	while (tp != NULL) {
-			tp = strtok( NULL," " );
-			tmp.push_back(tp);
+        tp = strtok( NULL," " );
+        tmp.push_back(tp);
 	}
 	
     TooN::Vector<5> vUpdate;

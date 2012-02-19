@@ -11,19 +11,29 @@
 
 #define PTAM_SCALE 0.001
 
+#include "ofMain.h"
+
+#include "ofxTracker.h"
+#include "ofxATANCamera.h"
+#include "ofxCameraCalibrator.h"
+
 #include "cvd/image.h"
 #include "cvd/rgb.h"
 #include "cvd/byte.h"
+#include "cvd/colourspace.h"
+
+#include "gvars3/instances.h"
 
 #include "Map.h"
+#include "MapPoint.h"
 #include "MapMaker.h"
 #include "MapSerializer.h"
 
-class ofxATANCamera;
-class ofxTracker;
+#include "OpenGL.h"
 
-#include "ofxCameraCalibrator.h"
-#include "ofMain.h"
+#ifndef TARGET_OF_IPHONE
+#include <cvd/gl_helpers.h>
+#endif
 
 class ofxPTAMM {
 public:

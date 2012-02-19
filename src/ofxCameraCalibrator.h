@@ -10,13 +10,16 @@
 
 #define PTAM_SCALE 0.001
 
+#include "ofMain.h"
+
+#include "ofxCalibImage.h"
+#include "ofxATANCamera.h"
+
 #include "cvd/image.h"
 #include "cvd/byte.h"
-#include "ofxCalibImage.h"
-
-class ofxATANCamera;
-
-#include "ofMain.h"
+#include "TooN/SVD.h"
+#include <fstream>
+#include <stdlib.h>
 
 class ofxCameraCalibrator{
 public:
@@ -40,9 +43,10 @@ public:
 private:    
     void    optimizeOneStep();
     
-    ofxATANCamera               *mpCamera;          // The camera model
     CVD::Image<CVD::byte>       mimFrameBW;
     std::vector<ofxCalibImage>  vCalibImgs;
+    ofxATANCamera               *mpCamera;          // The camera model
+    ofxDataPackege              data;
     
     double  meanPixelError;
     int     nShowImage;
@@ -50,4 +54,4 @@ private:
     
     bool    bDisableDistortion;
     bool    bGrabNextFrame;
-};		
+};

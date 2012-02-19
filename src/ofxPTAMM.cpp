@@ -8,20 +8,12 @@
  */
 
 #include "ofxPTAMM.h"
-#include "ofxATANCamera.h"
 
-#include "cvd/colourspace.h"
-#include "gvars3/instances.h"
-#include "MapMaker.h"
-#include "ofxTracker.h"
-#include "OpenGL.h"
-#include "MapPoint.h"
-
-using namespace CVD;
 using namespace GVars3;
 
 ofxPTAMM::ofxPTAMM(){
     map = new PTAMM::Map;
+    map->bGood = false;
     vMaps.push_back( map );
     map->mapLockManager.Register(this);
     mapMaker = new PTAMM::MapMaker( vMaps, map );
@@ -43,10 +35,10 @@ void ofxPTAMM::init(int imgW, int imgH, string configFile) {
 	imgWidth = imgW;
 	imgHeight = imgH;	
     
-	mimFrameBW.resize(ImageRef(imgWidth,imgHeight));
+	mimFrameBW.resize( CVD::ImageRef(imgWidth,imgHeight));
     // First, check if the camera is calibrated.
     // If not, we need to run the calibration widget.
-    GV3::get<Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ATANCamera::mvDefaultParams, HIDDEN);
+    GV3::get<TooN::Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ofxATANCamera::mvDefaultParams, HIDDEN);
     camera = new ofxATANCamera("Camera");
     camera->loadParameters(configFile);
     
@@ -57,7 +49,7 @@ void ofxPTAMM::init(int imgW, int imgH, string configFile) {
         exit(1);
     }
     
-    tracker = new ofxTracker(ImageRef(imgWidth,imgHeight), *camera, vMaps, map, *mapMaker);	
+    tracker = new ofxTracker( CVD::ImageRef(imgWidth,imgHeight), *camera, vMaps, map, *mapMaker);		
 }
 
 bool ofxPTAMM::update(unsigned char * _pixels, int _width, int _height, ofImageType _type){    
@@ -67,8 +59,7 @@ bool ofxPTAMM::update(unsigned char * _pixels, int _width, int _height, ofImageT
     if (_height == -1)
         _height = imgHeight;
     
-    ImageRef mirSize = ImageRef(_width,_height);
-    BasicImage<CVD::byte> imCaptured(_pixels, mirSize);
+    CVD::ImageRef mirSize = CVD::ImageRef(_width,_height);
     mimFrameBW.resize(mirSize);
     
     if (_type == OF_IMAGE_GRAYSCALE){
@@ -133,17 +124,17 @@ ofVec2f ofxPTAMM::getScreenPosition() const{
     ofVec2f rta = ofVec3f(0,0);
     
     if ( isMapBuild() ){
-        SE3<> cvdMapMatrix = tracker->GetCurrentPose();
-        Matrix<4> cvdCamMatrix = camera->MakeUFBLinearFrustumMatrix(0.005, 100);
+        TooN::SE3<> cvdMapMatrix = tracker->GetCurrentPose();
+        TooN::Matrix<4> cvdCamMatrix = camera->MakeUFBLinearFrustumMatrix(0.005, 100);
         
-        Vector<3> v3;
+        TooN::Vector<3> v3;
         v3[0] = 0.001;
         v3[1] = 0.001;
         v3[2] = 0.001;
-        Vector<3> v3Cam = cvdMapMatrix * v3;
+        TooN::Vector<3> v3Cam = cvdMapMatrix * v3;
         if(v3Cam[2] < 0.001)
             v3Cam[2] = 0.001;
-        Vector<2> vPos = camera->Project(project(v3Cam));
+        TooN::Vector<2> vPos = camera->Project(project(v3Cam));
         
         rta.set(vPos[0], vPos[1]);
     }
@@ -152,9 +143,13 @@ ofVec2f ofxPTAMM::getScreenPosition() const{
 };
 
 void ofxPTAMM::moveCamera() const {
-    camera->SetImageSize(ImageRef(imgWidth,imgHeight));
+    // TODO:
+    //  - make this works on OpenGL 1.0 in order make camera translations and rotatios
+    //    on iphone
+    //
+    camera->SetImageSize( CVD::ImageRef(imgWidth,imgHeight) );
     
-    SE3<> cvdMatrix = tracker->GetCurrentPose();
+    TooN::SE3<> cvdMatrix = tracker->GetCurrentPose();
 	
     glMatrixMode(GL_PROJECTION); 
 	glLoadIdentity();
@@ -180,7 +175,7 @@ void ofxPTAMM::moveCamera() const {
     
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glMultMatrix(SE3<>());
+	//glMultMatrix( TooN::SE3<>() );
     
     ofScale(PTAM_SCALE, PTAM_SCALE, PTAM_SCALE);
     ofRotate(180, 0, 1, 0);
@@ -201,13 +196,13 @@ ofMatrix4x4 ofxPTAMM::getCameraMatrix() const{
 };
 
 ofVec3f ofxPTAMM:: getTranslation() const{
-    SE3<> cvdMatrix = tracker->GetCurrentPose();
+    TooN::SE3<> cvdMatrix = tracker->GetCurrentPose();
     //glTranslated( cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
     return ofVec3f(cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
 };
 
 ofMatrix4x4 ofxPTAMM::getRotationMatrix() const{
-    SE3<> cvdMatrix = tracker->GetCurrentPose();
+    TooN::SE3<> cvdMatrix = tracker->GetCurrentPose();
     
     TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
     /*GLdouble glm[16];
@@ -299,10 +294,9 @@ bool ofxPTAMM::switchMap( int nMapNum, bool bForce ){
  * threads and objects to it.
  */
 void ofxPTAMM::newMap(){
-    
     *bLockMap = false;
     map->mapLockManager.UnRegister( this );
-    map = new Map();
+    map = new PTAMM::Map();
     map->mapLockManager.Register( this );
     vMaps.push_back( map );
     
@@ -317,7 +311,7 @@ void ofxPTAMM::newMap(){
     }
     
     //update the map viewer object
-    //mpMapViewer->SwitchMap(mpMap);
+    //mapViewer->SwitchMap(map);
     
     tracker->SetNewMap( map );
     
@@ -381,7 +375,7 @@ bool ofxPTAMM::deleteMap( int nMapNum ){
     
     // find and delete the map
     for( size_t ii = 0; ii < vMaps.size(); ii++ ){
-        Map * pDelMap = vMaps[ ii ];
+        PTAMM::Map * pDelMap = vMaps[ ii ];
         if( pDelMap->MapID() == nMapNum ) {
             
             pDelMap->mapLockManager.Register( this );
