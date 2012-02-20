@@ -19,7 +19,6 @@ void ofxTracker::draw(bool _drawPoints){
     if( mpMap->IsGood() & !IsLost() ){
         // The colour of the ref grid shows if the coarse stage of tracking was used
         // (it's turned off when the camera is sitting still to reduce jitter.)
-        
         if(mbDidCoarse)
             ofSetColor(0, 255*0.5, 255, 255*0.6);
         else
@@ -48,7 +47,8 @@ void ofxTracker::draw(bool _drawPoints){
         glLineWidth(2);
         
         glEnableClientState(GL_VERTEX_ARRAY);
-        for(int i=0; i<nTot; i++){
+        for(int i=0; i<nTot; i++)
+        {
             glVertexPointer(2, GL_FLOAT, 0, &imVertices[i][0]);
             glDrawArrays(GL_LINE_STRIP, 0, nTot);
             
@@ -75,14 +75,32 @@ void ofxTracker::draw(bool _drawPoints){
                 
                 TooN::Vector<2> pos = mCamera.Project( PTAMM::project(v3Cam) );
                 
-                if (level == 0)
-                    ofSetColor(255, 0, 0);
-                else if (level == 1)
-                    ofSetColor(0,0, 255);
-                else if (level == 2)
-                    ofSetColor(0,255, 0);
+                int pSize = 5;
                 
-                ofCircle(pos[0],pos[1], 4);
+                
+                if (level == 0){
+                    //ofSetColor(255, 0, 0);
+                    ofSetColor(189,37,112);
+                    ofFill();
+                    pSize = 1;
+                } else if (level == 1) {
+                    //ofSetColor(0,0, 255);
+                    ofSetColor(115,31,145);
+                    ofFill();
+                    pSize = 2;
+                } else if (level == 2) {
+                    //ofSetColor(0,255, 0);
+                    ofSetColor(84,78,174);
+                    ofNoFill();
+                    pSize = 2;
+                } else if (level == 3) {
+                    //ofSetColor(0,255, 0);
+                    ofSetColor(142,150,204);
+                    ofNoFill();
+                    pSize = 2;
+                }
+                
+                ofCircle(pos[0],pos[1], pSize);
             }
         }
         
@@ -131,11 +149,11 @@ void ofxTracker::draw(bool _drawPoints){
                 tempTrailColours[2]=0;
                 tempTrailColours[3]=1.0;
             }
-            
+                
             
             tempTrailVertices[0]=trail.irInitialPos.x;
             tempTrailVertices[1]=trail.irInitialPos.y;
-            
+                
             if(bFound){
                 tempTrailColours[4]=1.0;
                 tempTrailColours[5]=0; 
@@ -149,7 +167,7 @@ void ofxTracker::draw(bool _drawPoints){
             }
             tempTrailVertices[2]=trail.irCurrentPos.x;
             tempTrailVertices[3]=trail.irCurrentPos.y;
-            
+                
             glVertexPointer(2,GL_FLOAT,0,&tempTrailVertices);
             glColorPointer(4, GL_FLOAT, 0, &tempTrailColours);
             glDrawArrays(GL_LINE_STRIP, 0, 2);

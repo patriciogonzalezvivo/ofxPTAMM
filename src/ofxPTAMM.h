@@ -22,14 +22,12 @@
 #include "cvd/byte.h"
 #include "cvd/colourspace.h"
 
-#include "gvars3/instances.h"
+#include "PTAMM/Map.h"
+#include "PTAMM/MapPoint.h"
+#include "PTAMM/MapMaker.h"
+#include "PTAMM/MapSerializer.h"
 
-#include "Map.h"
-#include "MapPoint.h"
-#include "MapMaker.h"
-#include "MapSerializer.h"
-
-#include "OpenGL.h"
+#include <PTAMM/OpenGL.h>
 
 #ifndef TARGET_OF_IPHONE
 #include <cvd/gl_helpers.h>
@@ -78,7 +76,7 @@ private:
     int     imgWidth, imgHeight;
     bool    *bLockMap;    // Stop a map being edited - i.e. keyframes added, points updated
     bool	bMapBuildComplete;
-};		
+};	
 		
 
 		

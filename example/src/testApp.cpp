@@ -12,8 +12,9 @@ void testApp::setup(){
 	
 	grabber.initGrabber(camWidth,camHeight);
     video.allocate(camWidth, camHeight, OF_IMAGE_COLOR);
-    //ccam.init(camWidth, camHeight);
-    
+#ifdef CAMARACALIBRATION
+    ccam.init(camWidth, camHeight);
+#endif
     // ofBox uses texture coordinates from 0-1, so you can load whatever
 	// sized images you want and still use them to texture your box
 	// but we have to explicitly normalize our tex coords here
@@ -31,7 +32,9 @@ void testApp::update(){
         video.mirror(false, true);
         video.update();
         ptamm.update( video.getPixels() );
-        //ccam.update( video.getPixels() );
+#ifdef CAMARACALIBRATION
+        ccam.update( video.getPixels() );
+#endif
     }
     
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
@@ -44,8 +47,10 @@ void testApp::draw(){
     ofSetColor(255, 255);
 	ptamm.draw();
     
+#ifdef CAMARACALIBRATION
     ofSetColor(255, 255);
-    //ccam.draw();
+    ccam.draw();
+#endif
     
     if ( ptamm.isMapBuild() ){
         cam.begin();
@@ -53,7 +58,7 @@ void testApp::draw(){
 		
         ptamm.moveCamera();
     
-        ofTranslate(0,0,-50);
+        ofTranslate(0, 0, -50);
         
         logo.bind();
         ofFill();
@@ -99,18 +104,20 @@ void testApp::keyPressed(int key){
         case 'p':
             ptamm.bDebug = !ptamm.bDebug;
 			break;
+#ifdef CAMARACALIBRATION
         case OF_KEY_RETURN:
-            //ccam.grabPicture();
+            ccam.grabPicture();
             break;
         case 'o':
-            //ccam.bOptimizing = !ccam.bOptimizing;
+            ccam.bOptimizing = !ccam.bOptimizing;
             break;
         case OF_KEY_UP:
-            //ccam.viewImage( (ccam.getActualImage()-1)%ccam.getTotalImages());
+            ccam.viewImage( (ccam.getActualImage()-1)%ccam.getTotalImages());
             break;
         case OF_KEY_DOWN:
-            //ccam.viewImage( (ccam.getActualImage()+1)%ccam.getTotalImages());
+            ccam.viewImage( (ccam.getActualImage()+1)%ccam.getTotalImages());
             break;
+#endif
 	}
 }
 

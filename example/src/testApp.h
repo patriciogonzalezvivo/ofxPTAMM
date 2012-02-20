@@ -4,6 +4,11 @@
 #include "ofMain.h"
 #include "ofxPTAMM.h"
 
+//#define CAMERACALIBRATION
+#ifdef CAMERACALIBRATION
+#include "ofxCameraCalibrator.h"
+#endif
+
 class testApp : public ofBaseApp{
 public:
     void setup();
@@ -22,7 +27,9 @@ public:
     ofVideoGrabber			grabber;
     ofImage                 video;
     ofxPTAMM				ptamm;
-    //ofxCameraCalibrator     ccam;
+#ifdef CAMARACALIBRATION
+    ofxCameraCalibrator     ccam;
+#endif
     
     ofLight                 light;
     ofCamera                cam;

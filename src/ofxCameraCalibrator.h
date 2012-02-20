@@ -17,7 +17,9 @@
 
 #include "cvd/image.h"
 #include "cvd/byte.h"
+
 #include "TooN/SVD.h"
+
 #include <fstream>
 #include <stdlib.h>
 

@@ -1,14 +1,65 @@
 #ofxPTAMM#
 
-This addon it´s based on @Akira_At_Asia ofxPTAM addon ( https://github.com/Akira-Hayasaka/ofxPTAM ). Insted of using PTAM developed by Georg Klein it use PTAMM by Robert Castle ( http://www.robots.ox.ac.uk/~bob/research/research_ptamm.html ).
+This addon it´s based on @Akira_At_Asia ofxPTAM addon ( https://github.com/Akira-Hayasaka/ofxPTAM ). Insted of using PTAM developed by Georg Klein it use PTAMM by Robert Castle ( http://www.robots.ox.ac.uk/~bob/research/research_ptamm.html ) witch manage multiple maps and let you save/load them.
 
-First you need to be able to compile PTAMM sources. I had a detailed tutorail for MacOSX 10.6 and 10.7 at: http://www.patriciogonzalezvivo.com/blog/?p=547
+##Build your own addon libraries##
+This addon it have been build and tested over MacOSX 10.6, MacOSX 10.7 and iOS 5. If you have another OS like Linux, or the provide one´s doesn´t work for you here it´s an explanation on how to build by your own.
+ 
+- First you need to be able to compile PTAMM sources. I had a detailed tutorial for MacOSX 10.6 and 10.7 at: http://www.patriciogonzalezvivo.com/blog/?p=547 . Doing some google research you probably found what you need´s to compile it on your OS
 
-##Prepare everything for seting your addon##
+- Once you know that you can compile and run it, let´s move the following PTAMM sources to the ```ofxPTAMM/include/PTAMM/``` ( if you don´t have one, just make it).
 
-- Move PTAMM directory inside ofxPTAMM addon and rename it ```include```. So at the end every PTAMM source could be found at ```ofxPTAMM/include/```
+  - ATANCamera.cc
+  - ATANCamera.h
+  - Bundle.cc
+  - Bundle.h
+  - CalibCornerPatch.cc
+  - CalibCornerPatch.h
+  - HomographyIni.cc
+  - HomographyIni.h
+  - KeyFrame.cc
+  - KeyFrame.h
+  - LevelHelpers.h
+  - LICENSE.txt
+  - Map.cc
+  - Map.h
+  - MapLockManager.cc
+  - MapLockManager.h
+  - MapMaker.cc
+  - MapMaker.h
+  - MapPoint.cc
+  - MapPoint.h
+  - MapSerializer.cc
+  - MapSerializar.h
+  - MD5.cc
+  - MD5.h
+  - MD5Wrapper.cc
+  - MD5Wrapper.h
+  - MEstimator.h
+  - MiniPatch.cc
+  - MiniPatch.h
+  - OpenGL.h
+  - PatchFinder.cc
+  - PatchFinder.h
+  - Relocaliser.cc
+  - Relocalizer.h
+  - ShiTomasi.cc
+  - ShiTomasi.h
+  - SmallBlurryImage.cc
+  - SmallBlurryImage.h
+  - SmallMatrixOpts.h
+  - tinyxml_license.txt
+  - tinyxml.cc
+  - tinyxml.h
+  - tinyxmlerror.cc
+  - tinyxmlparser.cc
+  - Tracker.cc
+  - Tracker.h
+  - TrackerData.h
+  - Utils.cc
+  - Utils.h
 
-- Copy need headers into ```include``` directory and replace your compiled libraries.
+- After that you need to copy the requiered libraries inside it´s own ```include``` directory. Note: That gvars3 it´s changed from the original. I take out some GUI classes and add it some definition sources in order to make it smaller and portable to iOS. If you are going to use the compiled libraries. Just copy them from your local ```include``` directory and do the same with the compiled libraries from the ```lib``` directory. Probably you want to do some thing like this:
 
 <pre>
 cd ofxPTAMM
@@ -19,7 +70,7 @@ cp -r /usr/local/lib/libcvd-0.8.dylib libs/osx/
 cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 </pre>
 
-- Add ```#undef``` check on the begining of ```ofxPTAMM/include/TooN/TooN.h```
+- Add #undef check on the begining of ```ofxPTAMM/include/TooN/TooN.h```
 
 ```c++
 #ifdef check
@@ -33,15 +84,28 @@ cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 
 ```
 
-- On OSX replace ```GL/*.h``` for ```OpenGL/*.h``` on ```ofxPTAMM/include/cvd/gl_helpers.h```
+- Change the path to ```gl.h``` and ```glext.h``` headers files on both ```ofxPTAMM/include/PTAMM/OpenGL.h``` and on ```ofxPTAMM/include/cvd/gl_helpers.h``` files in order to match with your OS specifications.
 
 ```c++
-//#include <GL/gl.h>
-//#include <GL/glu.h>
+#ifdef _LINUX
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
 
+#ifdef TARGET_OSX
 #include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
+#include <OpenGL/glext.h>
+#endif
 
+#ifdef TARGET_OPENGLES
+#import <OpenGLES/ES1/gl.h>
+#import <OpenGLES/ES1/glext.h>
+#endif
+
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <GL/glew.h>
+#endif
 ```
 
 - Put ```ofxPTAMM/include/cvd/Linux/capture_logic.cxx``` code between:
@@ -62,14 +126,6 @@ cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 
 - Replace all Point type calls for BPoint on ```ofxPTAM/include/Bundle.h``` and ```ofxPTAMM/include/Bundle.cc```
 		
-- Delete reference for main() 
-
-<pre>
-cd ofxPTAMM/include
-rm main.cc
-rm CammeraCalibration.h
-rm CammeraCalibration.h
-</pre>
 
 ##Adding ofxPTAMM addon to a oF project##
 

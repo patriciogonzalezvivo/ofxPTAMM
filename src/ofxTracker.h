@@ -12,10 +12,9 @@
 
 #include "ofxATANCamera.h"
 
-#include "Map.h"
-#include "MapPoint.h"
-#include "Tracker.h"
-#include "MapSerializer.h"
+#include "PTAMM/Map.h"
+#include "PTAMM/Tracker.h"
+#include "PTAMM/MapPoint.h"
 
 #include "cvd/image.h"
 
@@ -24,6 +23,7 @@ public:
 	
     ofxTracker(CVD::ImageRef irVideoSize, const ofxATANCamera &c, std::vector<PTAMM::Map*> &maps, PTAMM::Map *m, PTAMM::MapMaker &mm) : PTAMM::Tracker(irVideoSize, c, maps, m, mm){
         mnLostFrames = 0;
+        
     };
     
     void reset(){ Reset(); };

@@ -10,12 +10,5 @@ xcuserdata
 obj/
 bin/
 build/
-include/*.cc
-include/*.h
-include/*.r
-include/TooN
-include/cvd
-include/gvars3
-include/ARData
-include/README.txt
+include/PTAMM
 !data/

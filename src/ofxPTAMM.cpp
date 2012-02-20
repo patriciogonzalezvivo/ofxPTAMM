@@ -9,8 +9,6 @@
 
 #include "ofxPTAMM.h"
 
-using namespace GVars3;
-
 ofxPTAMM::ofxPTAMM(){
     map = new PTAMM::Map;
     map->bGood = false;
@@ -31,14 +29,13 @@ ofxPTAMM::~ofxPTAMM(){
 }
 
 void ofxPTAMM::init(int imgW, int imgH, string configFile) {
-    
+
 	imgWidth = imgW;
 	imgHeight = imgH;	
-    
+		
 	mimFrameBW.resize( CVD::ImageRef(imgWidth,imgHeight));
     // First, check if the camera is calibrated.
     // If not, we need to run the calibration widget.
-    GV3::get<TooN::Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ofxATANCamera::mvDefaultParams, HIDDEN);
     camera = new ofxATANCamera("Camera");
     camera->loadParameters(configFile);
     
@@ -150,28 +147,49 @@ void ofxPTAMM::moveCamera() const {
     camera->SetImageSize( CVD::ImageRef(imgWidth,imgHeight) );
     
     TooN::SE3<> cvdMatrix = tracker->GetCurrentPose();
-	
+    
     glMatrixMode(GL_PROJECTION); 
 	glLoadIdentity();
     
     TooN::Matrix<4> mC = camera->MakeUFBLinearFrustumMatrix(0.005, 100);
+#ifdef TARGET_OF_IPHONE
+    GLfloat glmC[16];
+    glmC[0] = mC[0][0]; glmC[1] = mC[1][0]; glmC[2] = mC[2][0]; glmC[3] = mC[3][0];
+    glmC[4] = mC[0][1]; glmC[5] = mC[1][1]; glmC[6] = mC[2][1]; glmC[7] = mC[3][1];
+    glmC[8] = mC[0][2]; glmC[9] = mC[1][2]; glmC[10] = mC[2][2]; glmC[11] = mC[3][2];
+    glmC[12] = mC[0][3]; glmC[13] = mC[1][3]; glmC[14] = mC[2][3]; glmC[15] = mC[3][3];
+    glMultMatrixf(glmC);
+#else
     GLdouble glmC[16];
     glmC[0] = mC[0][0]; glmC[1] = mC[1][0]; glmC[2] = mC[2][0]; glmC[3] = mC[3][0];
     glmC[4] = mC[0][1]; glmC[5] = mC[1][1]; glmC[6] = mC[2][1]; glmC[7] = mC[3][1];
     glmC[8] = mC[0][2]; glmC[9] = mC[1][2]; glmC[10] = mC[2][2]; glmC[11] = mC[3][2];
     glmC[12] = mC[0][3]; glmC[13] = mC[1][3]; glmC[14] = mC[2][3]; glmC[15] = mC[3][3];
     glMultMatrixd(glmC);
-	
+#endif
+
+#ifdef TARGET_OF_IPHONE
+    glTranslatef(cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
+#else
     glTranslated( cvdMatrix.get_translation()[0], cvdMatrix.get_translation()[1], cvdMatrix.get_translation()[2]);
-    TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
-    GLdouble glm[16];
+#endif
     
+    TooN::Matrix<3> m = cvdMatrix.get_rotation().get_matrix();
+#ifdef TARGET_OF_IPHONE
+    GLfloat glm[16];
     glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = 0;
     glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
     glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
     glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
-    
+    glMultMatrixf(glm);
+#else
+    GLdouble glm[16];
+    glm[0] = m[0][0]; glm[1] = m[1][0]; glm[2] = m[2][0]; glm[3] = 0;
+    glm[4] = m[0][1]; glm[5] = m[1][1]; glm[6] = m[2][1]; glm[7] = 0;
+    glm[8] = m[0][2]; glm[9] = m[1][2]; glm[10] = m[2][2]; glm[11] = 0;
+    glm[12] = 0; glm[13] = 0; glm[14] = 0; glm[15] = 1;
     glMultMatrixd(glm);
+#endif
     
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();

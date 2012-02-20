@@ -8,7 +8,7 @@
 #include "ofMain.h"
 
 #include "ofxATANCamera.h"
-#include "CalibCornerPatch.h"
+#include "PTAMM/CalibCornerPatch.h"
 
 #include "cvd/utility.h"
 #include "cvd/convolution.h"
