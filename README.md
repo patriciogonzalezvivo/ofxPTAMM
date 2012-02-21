@@ -70,7 +70,21 @@ cp -r /usr/local/lib/libcvd-0.8.dylib libs/osx/
 cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 </pre>
 
-- Add #undef check on the begining of ```ofxPTAMM/include/TooN/TooN.h```
+- Probably you want to delet soureces form other platforms like ```ofxPTAMM/include/cvd/Build```, ```ofxPTAMM/include/cvd/Linux``` . Any way if you leave sources from other platforms and they are giving you a headache you coud use pre-compilers definitions to look the up. For example on  ```ofxPTAMM/include/cvd/Linux/capture_logic.cxx``` you can put the  code between:
+
+```c++
+#ifdef LINUX
+
+    while(vd.pending())
+    
+    // ... all the code
+    
+    }
+
+#endif
+```
+
+- I don´t know exactly way but sometimes it´s need to add ```#undef``` check on the begining of ```ofxPTAMM/include/TooN/TooN.h```. So at the end will look something like this
 
 ```c++
 #ifdef check
@@ -81,7 +95,6 @@ cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 #define TOON_INCLUDE_TOON_H
 #include <iostream>
 // ...
-
 ```
 
 - Change the path to ```gl.h``` and ```glext.h``` headers files on both ```ofxPTAMM/include/PTAMM/OpenGL.h``` and on ```ofxPTAMM/include/cvd/gl_helpers.h``` files in order to match with your OS specifications.
@@ -108,25 +121,8 @@ cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 #endif
 ```
 
-- Put ```ofxPTAMM/include/cvd/Linux/capture_logic.cxx``` code between:
-
-```c++
-#ifdef LINUX
-
-    while(vd.pending())
-    
-    // ... all the code
-    
-    }
-
-#endif
-```
-
-- Remove references to ```ofxPTAMM/include/cvd/Linux``` and ```ofxPTAMM/include/Build``` directories
-
 - Replace all Point type calls for BPoint on ```ofxPTAM/include/Bundle.h``` and ```ofxPTAMM/include/Bundle.cc```
 		
-
 ##Adding ofxPTAMM addon to a oF project##
 
 - Add the include and lib directory at the Project.xcconfig
@@ -145,4 +141,4 @@ HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) $(OF_PATH)/addons/ofxPTAMM/include
 
 - Add vecLib.framework. Here is how to add new frameworks http://meandmark.com/blog/2011/03/xcode-4-adding-a-framework-to-your-project/
 
-- Copy ```ofxPTAMM/include/camera.cfg``` to ```bin/data``` directory 
+- Finaly you need to copy ```ofxPTAMM/include/camera.cfg``` to ```bin/data``` directory. Needless to say that you need to calibrate your camera using PTAMM CameraCalibration. New ofxPTAMM versions have a camera-calibration class. After optimizing you need to manualy copy the results parameters to the camera.cfg   
