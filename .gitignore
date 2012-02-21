@@ -10,6 +10,4 @@ xcuserdata
 obj/
 bin/
 build/
-include/PTAMM/*.h
-include/PTAMM/*.cc
 !data/
