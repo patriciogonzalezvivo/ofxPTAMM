@@ -125,7 +125,7 @@ cp -r /usr/local/lib/libGVars3-0.6.dylib libs/osx/
 		
 ##Adding ofxPTAMM addon to a oF project##
 
-- Add the include and lib directory at the Project.xcconfig
+- Add the `includes` on the `libs` directory at the Project.xcconfig
 
 ```c++
 //THE PATH TO THE ROOT OF OUR OF PATH RELATIVE TO THIS PROJECT.
@@ -136,7 +136,7 @@ OF_PATH = ../../..
 #include "../../../libs/openFrameworksCompiled/project/osx/CoreOF.xcconfig"
 
 OTHER_LDFLAGS = $(OF_CORE_LIBS)
-HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) $(OF_PATH)/addons/ofxPTAMM/include
+HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) $(OF_PATH)/addons/ofxPTAMM/libs/cvd/include $(OF_PATH)/addons/ofxPTAMM/libs/gvars3/include $(OF_PATH)/addons/ofxPTAMM/libs/PTAMM/include $(OF_PATH)/addons/ofxPTAMM/libs/TooN/include
 ```
 
 - Add vecLib.framework. Here is how to add new frameworks http://meandmark.com/blog/2011/03/xcode-4-adding-a-framework-to-your-project/

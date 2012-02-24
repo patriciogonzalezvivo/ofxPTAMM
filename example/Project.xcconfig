@@ -6,4 +6,4 @@ OF_PATH = ../../..
 #include "../../../libs/openFrameworksCompiled/project/osx/CoreOF.xcconfig"
 
 OTHER_LDFLAGS = $(OF_CORE_LIBS) 
-HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) $(OF_PATH)/addons/ofxPTAMM/include
+HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) $(OF_PATH)/addons/ofxPTAMM/libs/cvd/include $(OF_PATH)/addons/ofxPTAMM/libs/gvars3/include $(OF_PATH)/addons/ofxPTAMM/libs/PTAMM/include $(OF_PATH)/addons/ofxPTAMM/libs/TooN/include
