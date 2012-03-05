@@ -2,6 +2,9 @@
 
 This addon it´s based on @Akira_At_Asia ofxPTAM addon ( https://github.com/Akira-Hayasaka/ofxPTAM ). Insted of using PTAM developed by Georg Klein it use PTAMM by Robert Castle ( http://www.robots.ox.ac.uk/~bob/research/research_ptamm.html ) witch manage multiple maps and let you save/load them.
 
+<iframe src="http://player.vimeo.com/video/36915621" width="640" height="480" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>
+
+
 ##Build your own addon libraries##
 This addon it have been build and tested over MacOSX 10.6, MacOSX 10.7 and iOS 5. If you have another OS like Linux, or the provide one´s doesn´t work for you here it´s an explanation on how to build by your own.
  
