@@ -29,6 +29,10 @@ struct Measurement;
 
 #define MAP_XML_ID "PTAMM_Map"
 #define MAP_VERSION "1.0"
+    
+#ifdef MAP_FAILED
+#undef MAP_FAILED
+#endif
 
 /**
  * This class is used for serializing and deserializing maps into a xml format
