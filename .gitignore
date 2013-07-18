@@ -8,6 +8,5 @@ xcuserdata
 
 .svn/
 obj/
-bin/
 build/
 !data/
